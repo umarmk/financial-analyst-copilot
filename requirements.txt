@@ -1,0 +1,5 @@
+pandas
+jupyter
+matplotlib
+python-dotenv
+streamlit

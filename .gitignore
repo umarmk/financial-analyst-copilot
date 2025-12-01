@@ -3,5 +3,14 @@ analyst_copilot_venv/
 __pycache__/
 *.pyc
 
+# VSCode
+.vscode/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data
+data/raw/
+
 # OS
 .DS_Store

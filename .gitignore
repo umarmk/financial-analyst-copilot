@@ -1,0 +1,7 @@
+# Python
+analyst_copilot_venv/
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store

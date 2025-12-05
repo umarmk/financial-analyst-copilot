@@ -1,5 +1,12 @@
 import streamlit as st
 import pandas as pd
+import sys
+import os
+
+# Get path to project root (two levels up from this file)
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 from src.metrics.core import (
     load_customer_month_mrr,

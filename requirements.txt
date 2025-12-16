@@ -1,5 +1,6 @@
 pandas
 jupyter
 matplotlib
-python-dotenv
 streamlit
+python-dotenv
+

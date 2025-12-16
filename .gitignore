@@ -9,8 +9,10 @@ __pycache__/
 # Jupyter
 .ipynb_checkpoints/
 
+# OS
+.DS_Store
+
 # Data
 data/raw/
 
-# OS
-.DS_Store
+

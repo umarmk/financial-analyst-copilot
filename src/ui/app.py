@@ -3,7 +3,14 @@ import pandas as pd
 import sys
 import os
 
-# Get path to project root (two levels up from this file)
+from dotenv import load_dotenv
+from src.llm.client import LLMRequest
+from src.llm.factory import get_llm_client
+from src.llm.prompts import build_metrics_prompt
+
+load_dotenv()
+
+# Get path to project root 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)

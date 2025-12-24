@@ -3,4 +3,4 @@ jupyter
 matplotlib
 streamlit
 python-dotenv
-
+tabulate

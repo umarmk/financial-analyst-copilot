@@ -4,16 +4,16 @@ import sys
 import os
 
 from dotenv import load_dotenv
+# Get path to project root 
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 from src.llm.client import LLMRequest
 from src.llm.factory import get_llm_client
 from src.llm.prompts import build_metrics_prompt
 
 load_dotenv()
-
-# Get path to project root 
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
 
 from src.metrics.core import (
     load_customer_month_mrr,
@@ -59,8 +59,13 @@ def main() -> None:
 
     st.title("SaaS Revenue Metrics Explorer")
 
+    # Cache metrics computation
+    @st.cache_data
+    def get_metrics_df() -> pd.DataFrame:
+        return compute_metrics()
+    
     with st.spinner("Loading metrics..."):
-        metrics_df = compute_metrics()
+        metrics_df = get_metrics_df()
 
     metric_options = {
         "Total MRR": "mrr_total",
@@ -80,17 +85,77 @@ def main() -> None:
     )
     selected_column = metric_options[selected_label]
 
+    # Select time window
+    window_choice = st.sidebar.selectbox(
+        "Time window",
+        options=["Last 6 months", "Last 12 months", "Last 24 months", "All"],
+        index=1,
+    )
+
+    window_map = {
+        "Last 6 months": 6,
+        "Last 12 months": 12,
+        "Last 24 months": 24,
+        "All": None,
+    }
+    n_months = window_map[window_choice]
+
+    plot_df = metrics_df.copy() 
+    if n_months is not None:    # Select time window
+        plot_df = plot_df.tail(n_months)
+
+
     st.subheader(selected_label)
 
     # Prepare data for chart
-    chart_df = metrics_df[["month_date", selected_column]].copy()
+    chart_df = plot_df[["month_date", selected_column]].copy()
     chart_df = chart_df.set_index("month_date")
 
     st.line_chart(chart_df)
 
     st.markdown("### Monthly values")
-    display_df = metrics_df[["month", selected_column]].copy()
+    display_df = plot_df[["month", selected_column]].copy()
     st.dataframe(display_df, use_container_width=True)
+
+    st.markdown("---")
+    st.subheader("AI Explanation")
+
+    user_question = st.text_input("Ask a question about the selected metric (optional)", value="")
+
+    explain_clicked = st.button("Explain", type="primary")
+
+    if explain_clicked:
+        try:
+            client = get_llm_client()
+
+            # Use the same window as the chart
+            window_df = metrics_df.copy()
+            if n_months is not None:
+                window_df = window_df.tail(n_months)
+
+            prompt = build_metrics_prompt(
+                window_df=window_df,
+                metric_label=selected_label,
+                metric_col=selected_column,
+                user_question=user_question,
+            )
+
+            response = client.generate(
+                LLMRequest(
+                    prompt=prompt,
+                    temperature=0.2,
+                    max_tokens=400,
+                )
+            )
+
+            st.markdown(response if response else "No response returned by the model.")
+
+            with st.expander("Show prompt (debug)"):
+                st.code(prompt)
+
+        except Exception as e:
+            st.error(f"LLM error: {e}")
+
 
 if __name__ == "__main__":
     main()

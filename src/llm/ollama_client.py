@@ -10,7 +10,7 @@ from .client import LLMClient, LLMRequest
 class OllamaClient(LLMClient):
     base_url: str
     model: str
-    timeout_seconds: int = 60
+    timeout_seconds: int = 180
     
     def generate(self, request: LLMRequest) -> str:
         url = f"{self.base_url}/api/generate"

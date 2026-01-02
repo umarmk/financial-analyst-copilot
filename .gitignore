@@ -18,5 +18,7 @@ data/raw/
 # Environment
 .env
 
-
+# Test logs
+smoke_test_log.txt
+openrouter_debug.json
 

@@ -71,6 +71,13 @@ Write 5-10 bullet points:
 - Notable spikes/drops (month + magnitude)
 - Relationship to Net New MRR / Churn MRR when relevant
 - Keep it plain language for a finance stakeholder
+
+Formatting rules:
+- Use Markdown.
+- Use '-' for bullets.
+- Do NOT use underscores for emphasis.
+- If you mention column names, wrap them in backticks (example: `net_new_mrr`).
+- Keep spaces between numbers and units (example: 1.54 M).
 """.strip()
 
     return prompt

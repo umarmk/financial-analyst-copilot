@@ -7,7 +7,7 @@ A comprehensive SaaS Financial Analysis tool that combines traditional metrics v
 - **Interactive Dashboard**: Built with Streamlit for real-time interaction.
 - **Key Metrics Visualization**: Track important SaaS metrics including:
   - Total MRR (Monthly Recurring Revenue)
-  - New MRR, Expansion MRR, Contraetion MRR, Churn MRR
+  - New MRR, Expansion MRR, Contraction MRR, Churn MRR
   - Net New MRR
   - Active Customers
   - Revenue Churn Rate

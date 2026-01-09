@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import pandas as pd 
 
-
+# Helper function
 def _to_markdown_table(df: pd.DataFrame, max_rows: int = 24) -> str:
     trimmed = df.tail(max_rows).copy()
     return trimmed.to_markdown(index=False)
 
+# Single-metric business performance summary
 def build_metrics_prompt(
     window_df: pd.DataFrame,
     metric_label: str,
@@ -78,6 +79,66 @@ Formatting rules:
 - Do NOT use underscores for emphasis.
 - If you mention column names, wrap them in backticks (example: `net_new_mrr`).
 - Keep spaces between numbers and units (example: 1.54 M).
+""".strip()
+
+    return prompt
+
+# Multi-metric business performance summary
+def build_executive_summary_prompt(
+    window_df: pd.DataFrame,
+    user_question: str | None,
+) -> str:
+    """
+    Multi-metric business performance summary for the selected time window.
+    """
+    df = window_df.copy()
+    start_month = str(df["month"].iloc[0])
+    end_month = str(df["month"].iloc[-1])
+
+    # Keep table compact and consistent
+    cols = [
+        "month",
+        "mrr_total",
+        "net_new_mrr",
+        "new_mrr",
+        "expansion_mrr",
+        "contraction_mrr",
+        "churn_mrr",
+        "active_customers",
+        "revenue_churn_rate",
+    ]
+    cols = [c for c in cols if c in df.columns]
+    table_md = _to_markdown_table(df[cols], max_rows=24)
+
+    question_block = ""
+    if user_question and user_question.strip():
+        question_block = f"\nUser question: {user_question.strip()}\n"
+
+    prompt = f"""
+You are a SaaS finance analyst. Use ONLY the provided data.
+Do not invent causes or assumptions (no marketing, pricing, product changes, etc.).
+If asked "why", explain that the dataset does not contain causal drivers.
+
+Formatting rules:
+- Use Markdown.
+- Use '-' for bullets.
+- If you mention column names, wrap them in backticks (example: `net_new_mrr`).
+- Keep spaces between numbers and units (example: 1.54 M).
+
+Task: Write an executive summary of business performance from {start_month} to {end_month}.
+Focus on:
+- Overall MRR trend (start, end, change)
+- What drove Net New MRR (New vs Expansion vs Churn vs Contraction)
+- Any notable spikes/drops (month + magnitude)
+- Active customers trend and revenue churn rate trend (if meaningful)
+
+Data table:
+{table_md}
+{question_block}
+
+Output:
+- 8–12 bullet points
+- Then a short “Top 3 takeaways” section
 """.strip()
 
     return prompt

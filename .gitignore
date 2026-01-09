@@ -12,13 +12,5 @@ __pycache__/
 # OS
 .DS_Store
 
-# Data
-data/raw/
-
 # Environment
 .env
-
-# Test logs
-smoke_test_log.txt
-openrouter_debug.json
-

@@ -12,7 +12,7 @@ if project_root not in sys.path:
 
 from src.llm.client import LLMRequest
 from src.llm.factory import get_llm_client
-from src.llm.prompts import build_metrics_prompt
+from src.llm.prompts import build_metrics_prompt, build_executive_summary_prompt
 
 load_dotenv()
 
@@ -199,9 +199,21 @@ def main() -> None:
 
     user_question = st.text_input("Ask a question about the selected metric (optional)", value="")
     show_prompt = st.checkbox("Show prompt (debug)", value=False)
-    explain_clicked = st.button("Explain", type="primary")
 
-    if explain_clicked:
+    # Mode selection
+    mode = st.radio(
+    "Mode",
+    options=["Explain selected metric", "Executive summary (overall)"],
+    horizontal=True,
+    )
+    col_a, col_b = st.columns([1, 1])
+    with col_a:
+        explain_clicked = st.button("Explain", type="primary")
+    with col_b:
+        summary_clicked = st.button("Executive Summary")
+
+    # Run LLM
+    if explain_clicked or summary_clicked:
         try:
             with st.spinner("Thinking..."):
                 client = get_llm_client()
@@ -210,18 +222,24 @@ def main() -> None:
                 if n_months is not None:
                     window_df = window_df.tail(n_months)
 
-                prompt = build_metrics_prompt(
-                    window_df=window_df,
-                    metric_label=selected_label,
-                    metric_col=selected_column,
-                    user_question=user_question,
-                )
+                if summary_clicked or mode == "Executive summary (overall)":
+                    prompt = build_executive_summary_prompt(
+                        window_df=window_df,
+                        user_question=user_question,
+                    )
+                else:
+                    prompt = build_metrics_prompt(
+                        window_df=window_df,
+                        metric_label=selected_label,
+                        metric_col=selected_column,
+                        user_question=user_question,
+                    )
 
                 response = client.generate(
                     LLMRequest(
                         prompt=prompt,
                         temperature=0.2,
-                        max_tokens=1000,
+                        max_tokens=1200,
                     )
                 )
 

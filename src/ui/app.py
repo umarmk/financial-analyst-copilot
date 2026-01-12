@@ -11,7 +11,7 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from src.llm.client import LLMRequest
-from src.llm.factory import get_llm_client
+from src.llm.factory import get_llm_client, get_llm_provider
 from src.llm.prompts import build_metrics_prompt, build_executive_summary_prompt
 
 load_dotenv()
@@ -71,6 +71,27 @@ def format_metric_value(metric_col: str, value: float) -> str:
 # Value is in decimal form (e.g., 0.0123 -> 1.23%)
 def format_percent(value: float) -> str:
     return f"{value*100:.2f}%"
+
+# Cleanup LLM output to remove common formatting issues
+def cleanup_llm_output(text: str, provider: str) -> str:
+    """
+    Fix common formatting issues from local models.
+    """
+    cleaned = text.strip()
+
+    if provider == "ollama":
+        # Remove triple backtick code fences if the model accidentally uses them
+        cleaned = cleaned.replace("```", "")
+
+        # Some models repeat "Top 3 takeaways" twice; keep the first occurrence
+        marker = "Top 3 takeaways"
+        first = cleaned.find(marker)
+        if first != -1:
+            second = cleaned.find(marker, first + 1)
+            if second != -1:
+                cleaned = cleaned[:second].strip()
+
+    return cleaned
 
 # Sanitize Markdown text to prevent Streamlit from treating underscores as italics
 def sanitize_markdown(text: str) -> str:
@@ -200,16 +221,8 @@ def main() -> None:
     user_question = st.text_input("Ask a question about the selected metric (optional)", value="")
     show_prompt = st.checkbox("Show prompt (debug)", value=False)
 
-    # Mode selection
-    mode = st.radio(
-    "Mode",
-    options=["Explain selected metric", "Executive summary (overall)"],
-    horizontal=True,
-    )
-    col_a, col_b = st.columns([1, 1])
-    with col_a:
+    with st.container(horizontal=True):
         explain_clicked = st.button("Explain", type="primary")
-    with col_b:
         summary_clicked = st.button("Executive Summary")
 
     # Run LLM
@@ -222,7 +235,7 @@ def main() -> None:
                 if n_months is not None:
                     window_df = window_df.tail(n_months)
 
-                if summary_clicked or mode == "Executive summary (overall)":
+                if summary_clicked:
                     prompt = build_executive_summary_prompt(
                         window_df=window_df,
                         user_question=user_question,
@@ -235,16 +248,28 @@ def main() -> None:
                         user_question=user_question,
                     )
 
+                # Configure LLM
+                provider = get_llm_provider()
+                temperature = 0.2
+                max_tokens = 1200
+
+                if provider == "ollama":
+                    temperature = 0.1
+                    max_tokens = 1000
+
+                # Generate response
                 response = client.generate(
                     LLMRequest(
                         prompt=prompt,
-                        temperature=0.2,
-                        max_tokens=1200,
+                        temperature=temperature,
+                        max_tokens=max_tokens,
                     )
                 )
 
-            response = sanitize_markdown(response)
-            st.markdown(response if response else "No response returned by the model.")
+                # Cleanup and display response
+                response = cleanup_llm_output(response, provider)
+                response = sanitize_markdown(response)
+                st.markdown(response if response else "No response returned by the model.")
 
             if show_prompt:
                 st.code(prompt)

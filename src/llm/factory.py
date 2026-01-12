@@ -8,7 +8,6 @@ from .client import LLMClient
 from .openrouter_client import OpenRouterClient
 
 # Factory function to create LLM client 
-# TODO: Add support for other providers 
 def get_llm_client() -> LLMClient:
     load_dotenv()
     provider = os.getenv("LLM_PROVIDER", "ollama").strip().lower()
@@ -40,3 +39,7 @@ def get_llm_client() -> LLMClient:
         )
 
     raise ValueError(f"Unknown LLM_PROVIDER: {provider}")
+
+# Helper function to get LLM provider
+def get_llm_provider() -> str:
+    return os.getenv("LLM_PROVIDER", "ollama").strip().lower()
